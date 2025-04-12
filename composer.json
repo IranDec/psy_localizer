@@ -9,7 +9,7 @@
     ],
     "require": {
         "php": ">=8.1.0",
-        "morilog/jalali": "3.*",
+        "hekmatinasser/verta": "^2.1",
         "prestaware/prestasdk": "^0.2.0"
     },
     "autoload": {
