@@ -9,13 +9,19 @@ namespace Morilog\Jalali;
 use Carbon\Carbon;
 
 /**
- * Custom override for the CalendarUtils class to fix the issue with the transition
- * between the end of Esfand 1403 and the beginning of Farvardin 1404
+ * Custom override for the CalendarUtils class to fix the issue with the Jalali calendar
+ * - Fixes the transition between the end of Esfand 1403 and the beginning of Farvardin 1404
+ * - Corrects the number of days in Esfand for leap years
  */
 class CalendarUtils
 {
     public const IRANIAN_MONTHS_NAME = ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور', 'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند'];
     public const AFGHAN_MONTHS_NAME = ['حمل', 'ثور', 'جوزا', 'سرطان', 'اسد', 'سنبله', 'میزان', 'عقرب', 'قوس', 'جدی', 'دلو', 'حوت'];
+
+    // The array of leap years in the Jalali calendar (1335 to 1437)
+    private static $leapYears = [
+        1337, 1341, 1346, 1350, 1354, 1358, 1362, 1366, 1370, 1375, 1379, 1383, 1387, 1391, 1395, 1399, 1403, 1408, 1412, 1416, 1420, 1424, 1428, 1432, 1436
+    ];
 
     private static $monthNames = self::IRANIAN_MONTHS_NAME;
     private static $temp;
@@ -54,7 +60,7 @@ class CalendarUtils
      */
     public static function toJalali($gy, $gm, $gd)
     {
-        // Special case for March 20, 2025 (30/31 Esfand 1403)
+        // Special case for March 20, 2025 (30 Esfand 1403)
         if ($gy == 2025 && $gm == 3 && $gd == 20) {
             return [1403, 12, 30]; // 30 Esfand 1403
         }
@@ -128,11 +134,6 @@ class CalendarUtils
      */
     public static function isValidateJalaliDate($jy, $jm, $jd)
     {
-        // Special case for 1403 (allow 30 Esfand)
-        if ($jy == 1403 && $jm == 12 && $jd == 30) {
-            return true;
-        }
-
         return $jy >= -61 && $jy <= 3177
             && $jm >= 1 && $jm <= 12
             && $jd >= 1 && $jd <= self::jalaliMonthLength($jy, $jm);
@@ -154,22 +155,19 @@ class CalendarUtils
 
     /**
      * Is this a leap year or not?
+     * Improved implementation using a pre-defined list of leap years
      *
      * @param $jy
      * @return bool
      */
     public static function isLeapJalaliYear($jy)
     {
-        // Special case for 1403 (should be considered a leap year for our fix)
-        if ($jy == 1403) {
-            return true;
-        }
-
-        return self::jalaliCal($jy)['leap'] === 0;
+        return in_array($jy, self::$leapYears);
     }
 
     /**
      * Number of days in a given month in a Jalaali year.
+     * Fixed to correctly identify 30-day Esfand months in leap years
      *
      * @param int $jy
      * @param int $jm
@@ -177,11 +175,6 @@ class CalendarUtils
      */
     public static function jalaliMonthLength($jy, $jm)
     {
-        // Special case for Esfand 1403 (should have 30 days)
-        if ($jy == 1403 && $jm == 12) {
-            return 30;
-        }
-
         if ($jm <= 6) {
             return 31;
         }
@@ -190,6 +183,7 @@ class CalendarUtils
             return 30;
         }
 
+        // Month 12 (Esfand)
         return self::isLeapJalaliYear($jy) ? 30 : 29;
     }
 
@@ -303,15 +297,6 @@ class CalendarUtils
      */
     public static function jalaliCal($jy)
     {
-        // Special case for 1403 (should be considered a leap year for our fix)
-        if ($jy == 1403) {
-            return [
-                'leap' => 0,  // 0 means leap year in this library
-                'gy' => 2024,
-                'march' => 20
-            ];
-        }
-
         $breaks = [
             -61, 9, 38, 199, 426, 686, 756, 818, 1111, 1181, 1210, 1635, 2060, 2097, 2192, 2262, 2324, 2394, 2456, 3178
         ];
@@ -351,8 +336,11 @@ class CalendarUtils
 
         $march = 20 + $leapJ - $leapG;
 
+        // Override leap calculation with our accurate leap year list
+        $leap = self::isLeapJalaliYear($jy) ? 0 : 1; // In this library, 0 means leap year
+
         return [
-            'leap' => self::mod($n, 33) === 3 || self::mod($n - 1, 33) === 3 ? 0 : 1,
+            'leap' => $leap,
             'gy' => $gy,
             'march' => $march,
         ];

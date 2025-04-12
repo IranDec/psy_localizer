@@ -10,8 +10,9 @@ use Assert\Assertion;
 use Carbon\Carbon;
 
 /**
- * Custom override for the Jalalian class to fix the issue with the transition
- * between the end of Esfand 1403 and the beginning of Farvardin 1404
+ * Custom override for the Jalalian class to fix the issue with the Jalali calendar
+ * - Fixes the transition between the end of Esfand 1403 and the beginning of Farvardin 1404
+ * - Corrects the number of days in Esfand for leap years
  */
 class Jalalian
 {
@@ -61,22 +62,13 @@ class Jalalian
         int $second = 0,
         \DateTimeZone $timezone = null
     ) {
-        // Allow 30 Esfand 1403
-        if ($year == 1403 && $month == 12 && $day == 30) {
-            // This is valid, do nothing
-        } else {
-            Assertion::between($year, 1000, 3000);
-            Assertion::between($month, 1, 12);
-            Assertion::between($day, 1, 31);
-
-            if ($month > 6) {
-                Assertion::between($day, 1, 30);
-            }
-
-            if (!CalendarUtils::isLeapJalaliYear($year) && $month === 12) {
-                Assertion::between($day, 1, 29);
-            }
-        }
+        // Validate dates
+        Assertion::between($year, 1000, 3000);
+        Assertion::between($month, 1, 12);
+        
+        // Get the maximum number of days for this month
+        $maxDays = CalendarUtils::jalaliMonthLength($year, $month);
+        Assertion::between($day, 1, $maxDays);
         
         Assertion::between($hour, 0, 24);
         Assertion::between($minute, 0, 59);
@@ -150,6 +142,11 @@ class Jalalian
     public function getTimezone()
     {
         return $this->timezone;
+    }
+    
+    public function isLeapYear(): bool
+    {
+        return CalendarUtils::isLeapJalaliYear($this->year);
     }
     
     public function format(string $format): string
