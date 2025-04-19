@@ -6,6 +6,8 @@
  * @author Hashem Afkhami <hashemafkhami89@gmail.com>
  * @copyright (c) 2025 - PrestaYar Team
  * @website https://prestayar.com
+ * 
+ * Jalali calendar fixes for 1403-1404 transition by Mohammad Babaei (https://adschi.com)
  */
 declare(strict_types=1);
 
@@ -15,6 +17,7 @@ use Morilog\Jalali\Jalalian;
 use Morilog\Jalali\CalendarUtils;
 use PrestaShop\PrestaShop\Core\Grid\Data\GridData;
 use PrestaShop\PrestaShop\Core\Grid\Record\RecordCollection;
+use PrestaYar\Localizer\JalaliDateCorrection;
 
 class NativeCorePrestashop
 {
@@ -348,7 +351,13 @@ class NativeCorePrestashop
 
                 $date = strtotime($value);
                 if (!empty($date) && $date > 0) {
-                    $record[$key] = Jalalian::forge($date)->format('Y-m-d H:i:s');
+                    // Check if it's a problematic date (March 20-21, 2025)
+                    if (class_exists('\PrestaYar\Localizer\JalaliDateCorrection') && 
+                        JalaliDateCorrection::isProblematicDate(date('Y-m-d', $date))) {
+                        $record[$key] = JalaliDateCorrection::format(date('Y-m-d', $date), 'Y-m-d H:i:s');
+                    } else {
+                        $record[$key] = Jalalian::forge($date)->format('Y-m-d H:i:s');
+                    }
                 }
             }
             $records[] = $record;

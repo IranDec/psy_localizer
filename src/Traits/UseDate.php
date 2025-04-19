@@ -6,6 +6,8 @@
  * @author Hashem Afkhami <hashemafkhami89@gmail.com>
  * @copyright (c) 2025 - PrestaYar Team
  * @website https://prestayar.com
+ * 
+ * Jalali calendar fixes for 1403-1404 transition by Mohammad Babaei (https://adschi.com)
  */
 declare(strict_types=1);
 
@@ -13,6 +15,7 @@ namespace PrestaYar\Localizer\Traits;
 
 use Carbon\Carbon;
 use Morilog\Jalali\Jalalian;
+use PrestaYar\Localizer\JalaliDateCorrection;
 
 trait UseDate
 {
@@ -72,6 +75,11 @@ trait UseDate
 
         // 3000 year jalali
         if ($time < '32503667400') {
+            // Check if the date falls within the problematic period (March 20-21, 2025)
+            if (class_exists('\PrestaYar\Localizer\JalaliDateCorrection') && JalaliDateCorrection::isProblematicDate(date('Y-m-d', $time))) {
+                return JalaliDateCorrection::format(date('Y-m-d', $time), $format);
+            }
+            
             return Jalalian::forge($time)->format($format);
         }
 
